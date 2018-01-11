@@ -61,15 +61,18 @@ defmodule PhoenixPubSubPostgres.Server do
   end
 
   def handle_info(:establish_conn, state) do
-    case Postgrex.Connection.start_link(state.opts) do
-      {:ok, postgrex_pid} -> establish_success(postgrex_pid, state)
-      _error          -> establish_failed(state)
+    case Postgrex.Notifications.start_link(state.opts) do
+      {:ok, postgrex_pid} ->
+        establish_success(postgrex_pid, state)
+
+      _error
+        -> establish_failed(state)
     end
   end
 
-  def handle_info({:notification, pid, ref, namespace, encoded_message} = message, state) do
+  def handle_info({:notification, _pid, _ref, _namespace, encoded_message}, state) do
     {_vsn, from_pid, topic, msg} = :base64.decode(encoded_message) |> :erlang.binary_to_term
-    Local.broadcast(state.local_name, from_pid, topic, msg)
+    Local.broadcast(nil, state.local_name, 1, from_pid, topic, msg)
     {:noreply, state}
   end
 
@@ -80,7 +83,7 @@ defmodule PhoenixPubSubPostgres.Server do
     {:noreply, %{state | status: :disconnected}}
   end
   defp establish_success(postgrex_pid, state) do
-    {:ok, ref} = Postgrex.Connection.listen(postgrex_pid, state.namespace)
+    {:ok, ref} = Postgrex.Notifications.listen(postgrex_pid, state.namespace)
     {:noreply, %{state | postgrex_pid: postgrex_pid,
                          postgrex_ref: ref,
                          status: :connected}}

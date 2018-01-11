@@ -16,7 +16,7 @@ defmodule PhoenixPubSubPostgres.Connection do
   end
 
   def handle_call(:conn, _, {:disconnected, opts}) do
-    case Postgrex.Connection.start_link(opts) do
+    case Postgrex.start_link(opts) do
       {:ok, pid}    -> {:reply, {:ok, pid}, {pid, opts}}
       {:error, err} -> {:reply, {:error, err}, {:disconnected, opts}}
     end
@@ -35,12 +35,7 @@ defmodule PhoenixPubSubPostgres.Connection do
   end
 
   def terminate(_reason, {:disconnected, _}), do: :ok
-  def terminate(_reason, {pid, _}) do
-    try do
-      Postgrex.Connection.stop(pid)
-    catch
-      :exit, {:noproc, _} -> :ok
-    end
+  def terminate(_reason, {_pid, _}) do
     :ok
   end
 end

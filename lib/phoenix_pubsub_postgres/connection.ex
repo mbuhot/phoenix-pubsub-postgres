@@ -37,7 +37,7 @@ defmodule PhoenixPubSubPostgres.Connection do
   def terminate(_reason, {:disconnected, _}), do: :ok
   def terminate(_reason, {pid, _}) do
     try do
-      Postgrex.Connection.stop(conn)
+      Postgrex.Connection.stop(pid)
     catch
       :exit, {:noproc, _} -> :ok
     end

@@ -15,7 +15,7 @@ defmodule PhoenixPubSubPostgres.Server do
   Starts the server
   """
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: Dict.fetch!(opts, :name))
+    GenServer.start_link(__MODULE__, opts, name: Keyword.fetch!(opts, :name))
   end
 
   @doc """
@@ -25,26 +25,19 @@ defmodule PhoenixPubSubPostgres.Server do
   def broadcast(namespace, pool_name, postgres_msg) do
     :poolboy.transaction pool_name, fn worker_pid ->
       bin_msg = :erlang.term_to_binary(postgres_msg) |> :base64.encode
-      case GenServer.call(worker_pid, :conn) do
-        {:ok, conn_pid} ->
-          case Postgrex.Connection.query(conn_pid, "NOTIFY $1, $2", [namespace, bin_msg]) do
-            {:error, reason} -> {:error, reason}
-            {:error, kind, reason, stack} ->
-              :erlang.raise(kind, reason, stack)
-            _ -> :ok
-          end
-
-        {:error, reason} -> {:error, reason}
+      with {:ok, conn_pid} <- GenServer.call(worker_pid, :conn),
+           {:ok, _} <- Postgrex.query(conn_pid, "NOTIFY $1, $2", [namespace, bin_msg]) do
+        :ok
       end
     end
   end
 
   def init(opts) do
     Process.flag(:trap_exit, true)
-    send(self, :establish_conn)
+    send(self(), :establish_conn)
     {:ok, %{local_name: Keyword.fetch!(opts, :local_name),
             pool_name: Keyword.fetch!(opts, :pool_name),
-            namespace: postgres_namespace,
+            namespace: postgres_namespace(),
             postgrex_pid: nil,
             postgrex_ref: nil,
             status: :disconnected,

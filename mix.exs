@@ -5,9 +5,9 @@ defmodule PhoenixPubSubPostgres.Mixfile do
     [app: :phoenix_pubsub_postgres,
      version: "0.0.2",
      description: "Postgresql PubSub adapter for Phoenix apps",
-     package: package,
+     package: package(),
      elixir: "~> 1.0",
-     deps: deps]
+     deps: deps()]
   end
 
   # Configuration for the OTP application

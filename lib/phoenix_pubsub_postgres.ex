@@ -36,10 +36,13 @@ defmodule PhoenixPubSubPostgres do
   @doc false
   def init([server_name, opts]) do
     opts = Keyword.merge(@defaults, opts)
-    opts = Keyword.merge(opts, host: String.to_char_list(opts[:host]))
-    if pass = opts[:password] do
-      opts = Keyword.put(opts, :pass, String.to_char_list(pass))
-    end
+    opts = Keyword.merge(opts, host: String.to_charlist(opts[:host]))
+    opts =
+      if pass = opts[:password] do
+        Keyword.put(opts, :pass, String.to_charlist(pass))
+      else
+        opts
+      end
 
     pool_name   = Module.concat(server_name, Pool)
     local_name  = Module.concat(server_name, Local)
